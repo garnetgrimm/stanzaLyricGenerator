@@ -5,17 +5,17 @@ import random
 
 DO_LEARN = False
 DO_WRITE = True
-LINES_TO_LEARN = 100
-LINES_TO_WRITE = 10000
+LINES_TO_LEARN = 1000
+LINES_TO_WRITE = 10
 
 LEARN_FROM = "res/hunger_games.txt"
 WRITE_FROM = "res/bla.txt"
 
-DEBUG_PRINT_TYPES = False
 DEBUG_PRINT_ORIG = False
-DEBUG_PRINT_DETAILED = False
+DEBUG_PRINT_TYPES = False
 DEBUG_PRINT_LINE = False
 DEBIG_PRINT_SPACE = False
+DEBUG_PRINT_DETAILED = False
 
 found_data = dict()
 found_data_feats = dict()
@@ -79,6 +79,8 @@ def parse_feats(word):
     return feats
     
 def find_word_of_type(word):
+    word = CleanWord(word)
+
     up = word.upos
     xp = word.xpos
     feats = word.feats
@@ -100,17 +102,21 @@ def find_word_of_type(word):
         if up == POS:
             better_canidates = set()
             for pot_word in canidates:
+                if(word.feats is None or pot_word.feats is None):
+                    continue
                 required_common_elements = required_common[POS]
-                for element in required_common:
-                    if(feats is None):
+                good_can = True
+                for element in required_common_elements:
+                    if(element not in word.feats):
                         continue
-                    if(element not in feats):
-                        continue
-                    if(element not in pot_feats):
-                        continue
-                    if(pot_feats[element] != feats[element]):
-                        continue
-                better_canidates.add(pot_word)
+                    if(element not in pot_word.feats):
+                        good_can = False
+                        break
+                    if(word.feats[element] != pot_word.feats[element]):
+                        good_can = False
+                        break
+                if(good_can):
+                    better_canidates.add(pot_word)
             if(len(better_canidates) == 0):
                 better_canidates = canidates
             return random.sample(better_canidates, 1)[0]
@@ -181,22 +187,22 @@ def write_song():
         
         new_sentence = check_a_vs_an(new_sentence)
         
-        print_sentance(sentence, new_sentence, type_sentence)
+        print_sentance(i, sentence, new_sentence, type_sentence)
         i+=1
     
-def print_sentance(sentence, new_sentence, type_sentence):
+def print_sentance(line_num, sentence, new_sentence, type_sentence):
     if(DEBIG_PRINT_SPACE):
         print()
     if(DEBUG_PRINT_ORIG):
         if(DEBUG_PRINT_LINE):
-            print(i, ": ", end="")
+            print(line_num, ": ", end="")
         print(" " + " ".join([word.text for word in sentence.words]))
     if(DEBUG_PRINT_LINE):
-        print(i, ": ", end="")
+        print(line_num, ": ", end="")
     print(new_sentence)
     if(DEBUG_PRINT_TYPES):
         if(DEBUG_PRINT_LINE):
-            print(i, ": ", end="")
+            print(line_num, ": ", end="")
         print(type_sentence)
     if(DEBUG_PRINT_DETAILED):
         print(sentence.words)
@@ -207,4 +213,6 @@ if __name__ == '__main__':
         serial_dump_found_data()
     if(DO_WRITE):
         found_data = serial_load_found_data()
+        #for pron in found_data["PRON"]["PRP"]:
+        #    print(pron)
         write_song()
