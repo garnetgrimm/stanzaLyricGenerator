@@ -4,23 +4,52 @@ import pickle
 import random
 
 DO_LEARN = False
-LINES_TO_LEARN = 1000
-LINES_TO_WRITE = 10
+DO_WRITE = True
+LINES_TO_LEARN = 100
+LINES_TO_WRITE = 10000
 
 LEARN_FROM = "res/hunger_games.txt"
-WRITE_FROM = "res/black_parade.txt"
+WRITE_FROM = "res/bla.txt"
 
 DEBUG_PRINT_TYPES = False
 DEBUG_PRINT_ORIG = False
-DEBIG_PRINT_SPACE = False
 DEBUG_PRINT_DETAILED = False
 DEBUG_PRINT_LINE = False
+DEBIG_PRINT_SPACE = False
 
 found_data = dict()
 found_data_feats = dict()
 
 nlp = stanza.Pipeline(lang='en', processors='tokenize,pos', use_gpu=True, pos_batch_size=3000)
-required_common = {"PRON":["Person"]}
+required_common = {"PRON":["Person", "Case"]}
+
+class CleanWord:
+    def __init__(self, word):
+        self.text = word.text
+        self.feats = parse_feats(word)
+        self.xpos = word.xpos
+        self.upos = word.upos
+    def __repr__(self):
+        return f'<{self.text},{self.feats}>'
+        
+    def __eq__(self, other):
+        if(self.text != other.text):
+            return False
+        if(self.feats != other.feats):
+            return False
+        if(self.xpos != other.xpos):
+            return False
+        if(self.upos != other.upos):
+            return False
+        return True
+        
+    def __hash__(self):
+        h = 0
+        h += hash(self.text)
+        h += hash(self.xpos) + hash(self.upos)
+        for feat in self.feats:
+            h += hash(self.feats[feat])
+        return h
 
 def check_a_vs_an(line):
     As = line.replace(" an ", " a ").split(" a ")
@@ -38,8 +67,10 @@ def check_a_vs_an(line):
             
 
 def parse_feats(word):
+    if word is None:
+        return None
     feats = dict()
-    if word.feats != None:
+    if word.feats is not None:
         for feat in word.feats.split("|"):
             feat_parts = feat.split("=")
             param = feat_parts[0]
@@ -50,7 +81,7 @@ def parse_feats(word):
 def find_word_of_type(word):
     up = word.upos
     xp = word.xpos
-    feats = parse_feats(word)
+    feats = word.feats
 
     if up not in found_data:
         return None
@@ -69,9 +100,10 @@ def find_word_of_type(word):
         if up == POS:
             better_canidates = set()
             for pot_word in canidates:
-                pot_feats = parse_feats(pot_word)
                 required_common_elements = required_common[POS]
                 for element in required_common:
+                    if(feats is None):
+                        continue
                     if(element not in feats):
                         continue
                     if(element not in pot_feats):
@@ -92,7 +124,8 @@ def add_to_found_data(word):
         found_data[up] = dict()
     if xp not in found_data[up]:
         found_data[up][xp] = set()
-    found_data[up][xp].add(word)
+    
+    found_data[up][xp].add(CleanWord(word))
 
 def serial_dump_found_data():
     pickle.dump(found_data, open( "word_bank.gar", "wb" ) )
@@ -148,16 +181,16 @@ def write_song():
         
         new_sentence = check_a_vs_an(new_sentence)
         
-        print_sentance(new_sentence)
+        print_sentance(sentence, new_sentence, type_sentence)
         i+=1
     
-def print_sentance(new_sentence):
+def print_sentance(sentence, new_sentence, type_sentence):
     if(DEBIG_PRINT_SPACE):
         print()
     if(DEBUG_PRINT_ORIG):
         if(DEBUG_PRINT_LINE):
             print(i, ": ", end="")
-        print(" ".join([word.text for word in sentence.words]))
+        print(" " + " ".join([word.text for word in sentence.words]))
     if(DEBUG_PRINT_LINE):
         print(i, ": ", end="")
     print(new_sentence)
@@ -167,11 +200,11 @@ def print_sentance(new_sentence):
         print(type_sentence)
     if(DEBUG_PRINT_DETAILED):
         print(sentence.words)
- 
+
 if __name__ == '__main__':
     if(DO_LEARN):
         learn_words()
         serial_dump_found_data()
-    else:
+    if(DO_WRITE):
         found_data = serial_load_found_data()
         write_song()
