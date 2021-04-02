@@ -2,14 +2,15 @@ import stanza
 import re
 import pickle
 import random
+import glob
 
 DO_LEARN = False
 DO_WRITE = True
 LINES_TO_LEARN = 1000
 LINES_TO_WRITE = 10
 
-LEARN_FROM = "res/hunger_games.txt"
-WRITE_FROM = "res/bla.txt"
+LEARN_FROM = "res/lyrics"
+WRITE_FROM = "res/black_parade.txt"
 
 DEBUG_PRINT_ORIG = False
 DEBUG_PRINT_TYPES = False
@@ -141,10 +142,14 @@ def serial_load_found_data():
     return words
 
 def learn_words():
-    with open(LEARN_FROM, 'r') as file:
-        data = file.read().lower().replace('\n', ' ')
+    all_files = glob.glob(LEARN_FROM + "/*")
+    data = ""
+    for file_name in all_files:
+        print("Learning from: " + file_name)
+        with open(file_name, 'r') as file:
+            data += file.read().lower()
 
-    data = data.replace('!', '.').split('.')[0:LINES_TO_LEARN]
+    data = data.replace('!', '.').replace("\n", ".").split('.')[0:LINES_TO_LEARN]
     
     i = 0
     for sentence_string in data:
