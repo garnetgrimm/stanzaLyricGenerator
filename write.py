@@ -149,7 +149,7 @@ def learn_words():
         with open(file_name, 'r') as file:
             data += file.read().lower()
 
-    data = data.replace('!', '.').replace("\n", ".").split('.')[0:LINES_TO_LEARN]
+    data = data.replace('!', '.').replace("\n", ".").split('.')[0:min(len(data),LINES_TO_LEARN)]
     
     i = 0
     for sentence_string in data:

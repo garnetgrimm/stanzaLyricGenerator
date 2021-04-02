@@ -60,10 +60,11 @@ def downloadSongFromURL(url, download_dir):
     song_artist = re.sub(r'[^A-Za-z]', '', song_artist).lower()
     song_title = re.sub(r'[^A-Za-z]', '', song_title).lower()
     fn = download_dir + '/' + make_safe_filename(song_artist) + "-" + make_safe_filename(song_title) + ".txt"
+    print(song_artist, song_title)
     with open(fn, 'w') as file:
         lines = lyrics.split("\n")
         for line in lines:
-            file.write(lyrics.encode('cp850', errors='replace').decode('cp850') + "\n")
+            file.write(line.encode('cp850', errors='replace').decode('cp850') + "\n")
 
 def getSongFromWeb(search_term, api_token, download_dir): 
     artist_id,artist_name = getArtistIDAndNameFromMostPopular(search_term, api_token)
